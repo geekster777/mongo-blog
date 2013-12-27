@@ -29,12 +29,16 @@ function includeTemplates(page, callback) {
 
   //Finds any instance of a commented include statement with one argument
   var includePatt = /<!--#include\s+\S+\s*-->/m;
-  if( includePatt.test(page) ) {
-    console.log("TEMPLATE: "+includePatt.source);
+  
+  var result = includePatt.exec(page);
+  
+  if( result !== null ) {
+    console.log("TEMPLATE: "+result);
     //gets the filename
-    var pos = includePatt.lastIndex;
-    var file = includePatt.source.replace(/<!--#include|-->/,'');
+    var file = result.toString().replace("<!--#include",'');
+    file = file.replace("-->",'');
     file = file.trim();
+    file = "/"+file;
     
     //looks up the file in the database
     lookupPage(file, function(contents) {
@@ -46,12 +50,17 @@ function includeTemplates(page, callback) {
       }
       
       //inserts the include into the content
-      page = page.replace(includePatt.source,contents);
+      page = page.replace(result.toString(),contents);
+      
+      //recursively calls includeTemplates until all of the includes are taken
+      //care of. It replaces includes one at a time. 
       includeTemplates(page, callback);
     });
   }
-
-  callback(page);
+  else {
+    //finally calls the initial callback
+    callback(page);
+  }
 }
 
 /** 
